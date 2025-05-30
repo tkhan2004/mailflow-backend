@@ -8,4 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class MailServiceImp implements MailService {
 
+    @Override
+    public void sendMail(MailRequestDto mailRequestDto, String senderEmail) throws Exception {
+
+    }
 }

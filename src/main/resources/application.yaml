@@ -1,17 +1,17 @@
 spring:
-    datasource:
-      url: jdbc:mysql://localhost:3306/mailflow
-      username: root
-      password:
-      driver-class-name: com.mysql.cj.jdbc.Driver
+  datasource:
+    url: jdbc:mysql://localhost:3306/mailflow
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
-    jpa:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
       hibernate:
-        ddl-auto: update
-      show-sql: true
-      properties:
-        hibernate:
-          format_sql: true
+        format_sql: true
 
 server:
   port: 8080
@@ -21,3 +21,6 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+jwt:
+  secret: 5SuHmZOnk+oRIcNIPz/Ec56QGaP2ILTuVzyODe0F2KY=
