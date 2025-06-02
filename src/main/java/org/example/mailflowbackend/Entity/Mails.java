@@ -15,14 +15,23 @@ public class Mails {
 
     private String subject;
     private String content;
-    private LocalDateTime created_at;
 
+    @Column(name = "create_date")
+    private LocalDateTime createdAt;
     @OneToMany(mappedBy = "mails", cascade = CascadeType.ALL)
     private List<Attachment> attachments = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "sender_id")
     private Users sender;
+
+    public Mails getMails() {
+        return mails;
+    }
+
+    public void setMails(Mails mails) {
+        this.mails = mails;
+    }
 
     @ManyToOne
     @JoinColumn(name = "receiver_id")
@@ -32,6 +41,10 @@ public class Mails {
     @JoinColumn(name = "thread_id")
     private MailThread thread;
 
+    @ManyToOne
+    @JoinColumn(name = "mails_id")
+    private Mails mails;
+
     // Constructors
     public Mails() {
     }
@@ -39,10 +52,18 @@ public class Mails {
     public Mails(String subject, String content, LocalDateTime created_at, Users sender, Users receiver, MailThread thread) {
         this.subject = subject;
         this.content = content;
-        this.created_at = created_at;
+        this.createdAt = created_at;
         this.sender = sender;
         this.receiver = receiver;
         this.thread = thread;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     // Getters and Setters
@@ -70,13 +91,6 @@ public class Mails {
         this.content = content;
     }
 
-    public LocalDateTime getCreated_at() {
-        return created_at;
-    }
-
-    public void setCreated_at(LocalDateTime created_at) {
-        this.created_at = created_at;
-    }
 
     public List<Attachment> getAttachments() {
         return attachments;

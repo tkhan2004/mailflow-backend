@@ -13,4 +13,6 @@ public class LoginResponseDto {
         this.refreshToken = refreshTokenStr;
         this.email = email;
     }
+
+
 }

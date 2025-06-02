@@ -14,23 +14,10 @@ public class MailParticipant {
     @JoinColumn(name = "thread_id")
     private MailThread thread;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private Users users;
-
-    private Boolean isRead = false;
-
-    // Constructors
     public MailParticipant() {
+
     }
 
-    public MailParticipant(MailThread thread, Users users, Boolean isRead) {
-        this.thread = thread;
-        this.users = users;
-        this.isRead = isRead;
-    }
-
-    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -55,11 +42,43 @@ public class MailParticipant {
         this.users = users;
     }
 
-    public Boolean getIsRead() {
+    public Boolean getRead() {
         return isRead;
     }
 
-    public void setIsRead(Boolean isRead) {
-        this.isRead = isRead;
+    public void setRead(Boolean read) {
+        isRead = read;
     }
+
+    public Boolean getSpam() {
+        return isSpam;
+    }
+
+    public void setSpam(Boolean spam) {
+        isSpam = spam;
+    }
+
+    public MailParticipant(Long id, MailThread thread, Users users, Boolean isRead, Boolean isSpam) {
+        this.id = id;
+        this.thread = thread;
+        this.users = users;
+        this.isRead = isRead;
+        this.isSpam = isSpam;
+    }
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private Users users;
+
+    private Boolean isRead = false;
+    private Boolean isSpam = false;
+
+
+
+    // Constructors
+
+
+
+
+
 }
