@@ -1,6 +1,7 @@
 package org.example.mailflowbackend.Repository;
 
 import org.example.mailflowbackend.Entity.MailParticipant;
+import org.example.mailflowbackend.Entity.MailThread;
 import org.example.mailflowbackend.Entity.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -27,4 +28,6 @@ public interface MailParticipantRepository extends JpaRepository<MailParticipant
     @Transactional
     @Query("UPDATE MailParticipant mp SET mp.isSpam = :isSpam WHERE mp.id = :id")
     void updateSpamStatus(@Param("id") Long id, @Param("isSpam") Boolean isSpam);
+
+    MailParticipant findByThreadAndUsers(MailThread thread, Users users);
 }

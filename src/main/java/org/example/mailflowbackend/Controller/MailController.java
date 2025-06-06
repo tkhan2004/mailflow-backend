@@ -4,10 +4,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.example.mailflowbackend.Dto.MailInboxDetailDto;
 import org.example.mailflowbackend.Dto.MailInboxDto;
 import org.example.mailflowbackend.Dto.MailRequestDto;
 import org.example.mailflowbackend.Dto.MailResponseDto;
 import org.example.mailflowbackend.Entity.MailParticipant;
+import org.example.mailflowbackend.Entity.MailThread;
 import org.example.mailflowbackend.Entity.Users;
 import org.example.mailflowbackend.Service.MailService;
 import org.example.mailflowbackend.payload.ApiResponse;
@@ -64,4 +66,11 @@ public class MailController {
     public ResponseEntity<ApiResponse<List<MailInboxDto>>> getMails(@AuthenticationPrincipal Users sender) {
         List<MailInboxDto> MailInboxDto = mailService.getInboxMails(sender);
         return ResponseEntity.ok(new ApiResponse<>(200, "Lấy hộp thoại thành công", MailInboxDto));
-}}
+    }
+
+    @GetMapping("/inbox/thread/{threadId}")
+    public ResponseEntity<ApiResponse<MailInboxDetailDto>>  getMailDetails(@PathVariable Long threadId, @AuthenticationPrincipal Users sender) {
+        MailInboxDetailDto mailInboxDetailDto = mailService.getMailDetail(threadId, sender);
+        return ResponseEntity.ok(new ApiResponse<>(200, "Chi tiết cuộc hội thoại", mailInboxDetailDto));
+    }
+}

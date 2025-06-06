@@ -1,8 +1,8 @@
 package org.example.mailflowbackend.Service;
 
+import org.example.mailflowbackend.Dto.MailInboxDetailDto;
 import org.example.mailflowbackend.Dto.MailInboxDto;
 import org.example.mailflowbackend.Dto.MailRequestDto;
-import org.example.mailflowbackend.Dto.MailResponseDto;
 import org.example.mailflowbackend.Entity.Users;
 
 import java.util.List;
@@ -12,7 +12,7 @@ public interface MailService {
 
     List<MailInboxDto> getInboxMails(Users user);
 
-    MailResponseDto getMailDetail(Long mailId, Users user);
+    MailInboxDetailDto getMailDetail(Long threadId, Users user);
 
     void markMailAsRead(Long mailId, Users user);
 

@@ -12,4 +12,6 @@ import java.util.List;
 public interface MailRepository extends JpaRepository<Mails, Long> {
     List<Mails> findByReceiver(Users users);
     Mails findTopByThreadOrderByCreatedAtDesc(MailThread thread);
+
+    List<Mails> findAllByThreadOrderByCreatedAtAsc(MailThread threaId);
 }
