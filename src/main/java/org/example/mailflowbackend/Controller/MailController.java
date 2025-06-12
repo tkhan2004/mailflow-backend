@@ -4,13 +4,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.example.mailflowbackend.Dto.MailInboxDetailDto;
-import org.example.mailflowbackend.Dto.MailInboxDto;
-import org.example.mailflowbackend.Dto.MailRequestDto;
-import org.example.mailflowbackend.Dto.MailResponseDto;
+import org.example.mailflowbackend.Dto.*;
 import org.example.mailflowbackend.Entity.MailParticipant;
 import org.example.mailflowbackend.Entity.MailThread;
 import org.example.mailflowbackend.Entity.Users;
+import org.example.mailflowbackend.Service.Imp.MailServiceImp;
 import org.example.mailflowbackend.Service.MailService;
 import org.example.mailflowbackend.payload.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +26,7 @@ import java.util.List;
 @RequestMapping("/api/mail")
 public class MailController {
     @Autowired
-    private MailService mailService;
+    private MailServiceImp mailService;
 
     @Operation(summary = "Gửi email", description = "Gửi email với tệp đính kèm")
     @PostMapping(value = "/send", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -62,6 +60,28 @@ public class MailController {
         }
     }
 
+    @Operation(summary = "Gửi email", description = "Gửi email với tệp đính kèm")
+    @PostMapping(value = "/reply", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<?>> replyMail(
+            @Parameter(description = "Id cuộc trò chuyện")
+            @RequestParam("threadId") Long threadId,
+
+            @Parameter(description = "Nội dung email")
+            @RequestParam("content") String content,
+
+            @Parameter(description = "File đính kèm", schema = @Schema(type = "string", format = "binary"))
+            @RequestPart(value = "file", required = false) MultipartFile file,
+
+            @AuthenticationPrincipal Users sender
+    ) throws Exception {
+        MailReplyDto mailReplyDto = new MailReplyDto();
+        mailReplyDto.setThreadId(threadId);
+        mailReplyDto.setContent(content);
+        mailReplyDto.setFile(file);
+        mailService.replyMail(mailReplyDto,sender);
+        return ResponseEntity.ok(new ApiResponse<>(200, "Gửi phản hồi thành công", mailReplyDto));
+    }
+
     @GetMapping("/inbox")
     public ResponseEntity<ApiResponse<List<MailInboxDto>>> getMails(@AuthenticationPrincipal Users sender) {
         List<MailInboxDto> MailInboxDto = mailService.getInboxMails(sender);
@@ -73,4 +93,18 @@ public class MailController {
         MailInboxDetailDto mailInboxDetailDto = mailService.getMailDetail(threadId, sender);
         return ResponseEntity.ok(new ApiResponse<>(200, "Chi tiết cuộc hội thoại", mailInboxDetailDto));
     }
+
+    @PostMapping("/mail/read-mail")
+    public ResponseEntity<ApiResponse<MailInboxDto>> ReadMail(@RequestBody MailStatusRequestDto mailStatusRequestDto, @AuthenticationPrincipal Users sender) {
+        mailService.markMailThreadAsRead(mailStatusRequestDto.getThreadId(), sender);
+        return ResponseEntity.ok(new ApiResponse<>(200, "Đánh dấu là đã đọc",null));
+    }
+
+    @PostMapping("/mail/spam-mail")
+    public ResponseEntity<ApiResponse<MailInboxDto>> SpamMail(@RequestBody MailStatusRequestDto mailStatusRequestDto, @AuthenticationPrincipal Users sender) {
+        mailService.markMailThreadAsSpam(mailStatusRequestDto.getThreadId(), sender);
+        return ResponseEntity.ok(new ApiResponse<>(200, "Đánh dấu spam",null));
+    }
+
+
 }

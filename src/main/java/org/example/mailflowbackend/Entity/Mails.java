@@ -21,6 +21,9 @@ public class Mails {
     @OneToMany(mappedBy = "mails", cascade = CascadeType.ALL)
     private List<Attachment> attachments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "mails",cascade = CascadeType.ALL)
+    private List<MailParticipant> mailParticipants = new ArrayList<>();
+
     @ManyToOne
     @JoinColumn(name = "sender_id")
     private Users sender;
@@ -41,9 +44,18 @@ public class Mails {
     @JoinColumn(name = "thread_id")
     private MailThread thread;
 
+    public List<MailParticipant> getMailParticipants() {
+        return mailParticipants;
+    }
+
+    public void setMailParticipants(List<MailParticipant> mailParticipants) {
+        this.mailParticipants = mailParticipants;
+    }
+
     @ManyToOne
     @JoinColumn(name = "mails_id")
     private Mails mails;
+
 
     // Constructors
     public Mails() {

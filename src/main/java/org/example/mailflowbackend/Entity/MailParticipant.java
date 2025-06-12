@@ -14,6 +14,10 @@ public class MailParticipant {
     @JoinColumn(name = "thread_id")
     private MailThread thread;
 
+    @ManyToOne
+    @JoinColumn(name = "mail_id")
+    private Mails mails;
+
     public MailParticipant() {
 
     }
@@ -40,6 +44,14 @@ public class MailParticipant {
 
     public void setUsers(Users users) {
         this.users = users;
+    }
+
+    public Mails getMails() {
+        return mails;
+    }
+
+    public void setMails(Mails mails) {
+        this.mails = mails;
     }
 
     public Boolean getRead() {

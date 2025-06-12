@@ -12,6 +12,7 @@ public class MailInboxDto {
     private String subject;
     private String lastContent;
     private String lastSenderEmail;
+    private String lastReceiverEmail;
     private LocalDateTime lastCreatedAt;
     private boolean isRead;
     private boolean isSpam;

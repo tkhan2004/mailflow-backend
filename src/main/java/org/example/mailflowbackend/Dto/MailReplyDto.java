@@ -5,13 +5,9 @@ import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
 @Data
-public class MailRequestDto {
-
-    @Schema(description = "Danh sách mail nguời nhận")
-    private String receiverEmail;
-
-    @Schema(description = "Tiêu đề mail")
-    private String subject;
+public class MailReplyDto {
+    @Schema(description = "Id cuộc hội thoại reply")
+    private Long threadId;
 
     @Schema(description = "Nội dụng mail")
     private String content;
