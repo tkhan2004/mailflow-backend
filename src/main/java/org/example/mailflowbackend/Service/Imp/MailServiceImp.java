@@ -11,184 +11,119 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class MailServiceImp implements MailService {
-    @Autowired
-    private CloudinaryServiceImp cloudinaryServiceImp;
-
-    @Autowired
-    private MailRepository mailRepository;
-
-    @Autowired
-    private MailThreadRepository mailThreadRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private AttachmentRepository attachmentRepository;
-
-    @Autowired
-    private MailParticipantRepository mailParticipantRepository;
-
-
+    @Autowired private CloudinaryServiceImp cloudinaryServiceImp;
+    @Autowired private MailRepository mailRepository;
+    @Autowired private MailThreadRepository mailThreadRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private AttachmentRepository attachmentRepository;
+    @Autowired private MailParticipantRepository mailParticipantRepository;
 
     @Override
     @Transactional
     public void sendMail(MailRequestDto mailRequestDto, Users sender) throws Exception {
-        try {
-            // Get the receiver user from the database
-            Users receiver = userRepository.findByEmail(mailRequestDto.getReceiverEmail())
-                    .orElseThrow(() -> new RuntimeException("Người nhận không tồn tại: " + mailRequestDto.getReceiverEmail()));
+        Users receiver = userRepository.findByEmail(mailRequestDto.getReceiverEmail())
+                .orElseThrow(() -> new RuntimeException("Người nhận không tồn tại"));
 
-            // Create a new mail thread
-            MailThread mailThread = new MailThread(mailRequestDto.getSubject());
-            mailThreadRepository.save(mailThread);
+        MailThread mailThread = new MailThread(mailRequestDto.getSubject());
+        mailThreadRepository.save(mailThread);
 
-            // Tạo MailParticipant cho sender
-            MailParticipant senderParticipant = new MailParticipant();
-            senderParticipant.setThread(mailThread);
-            senderParticipant.setUsers(sender);
-            senderParticipant.setRead(true); // Người gửi đã đọc
-            senderParticipant.setSpam(false);
-            mailParticipantRepository.save(senderParticipant);
+        mailParticipantRepository.save(new MailParticipant(mailThread, sender, true, false));
+        mailParticipantRepository.save(new MailParticipant(mailThread, receiver, false, false));
 
-            // Tạo MailParticipant cho receiver
-            MailParticipant receiverParticipant = new MailParticipant();
-            receiverParticipant.setThread(mailThread);
-            receiverParticipant.setUsers(receiver);
-            receiverParticipant.setRead(false); // Người nhận chưa đọc
-            receiverParticipant.setSpam(false);
-            mailParticipantRepository.save(receiverParticipant);
+        Mails mail = new Mails();
+        mail.setSubject(mailRequestDto.getSubject());
+        mail.setContent(encrypt(mailRequestDto.getContent()));
+        mail.setCreatedAt(LocalDateTime.now());
+        mail.setSender(sender);
+        mail.setReceiver(receiver);
+        mail.setThread(mailThread);
 
-            // Create a new mail
-            Mails mail = new Mails();
-            mail.setSubject(mailRequestDto.getSubject());
-            String encode = encrypt(mailRequestDto.getContent());
-            mail.setContent(encode);
-            mail.setCreatedAt(LocalDateTime.now());
-            mail.setSender(sender);
-            mail.setReceiver(receiver);
-            mail.setThread(mailThread);
-
-            // Handle attachment if present
-            MultipartFile file = mailRequestDto.getFile();
-            if (file != null && !file.isEmpty()) {
-                String fileUrl = cloudinaryServiceImp.uploadFile(file);
-
-                Attachment attachment = new Attachment();
-                attachment.setFile_name(file.getOriginalFilename());
-                attachment.setFile_type(file.getContentType());
-                attachment.setFile_size(file.getSize());
-                attachment.setFile_url(fileUrl);
-                attachment.setMails(mail);
-
-                mail.getAttachments().add(attachment);
-            }
-
-            // Save the mail
-            mailRepository.save(mail);
-        } catch (Exception e) {
-            throw new Exception("Lỗi khi gửi mail: " + e.getMessage(), e);
+        MultipartFile file = mailRequestDto.getFile();
+        if (file != null && !file.isEmpty()) {
+            Attachment attachment = new Attachment();
+            attachment.setFile_name(file.getOriginalFilename());
+            attachment.setFile_type(file.getContentType());
+            attachment.setFile_size(file.getSize());
+            attachment.setFile_url(cloudinaryServiceImp.uploadFile(file));
+            attachment.setMails(mail);
+            mail.getAttachments().add(attachment);
         }
+
+        mailRepository.save(mail);
     }
 
     @Override
     @Transactional
     public void replyMail(MailReplyDto mailReplyDto, Users sender) throws Exception {
-        MailThread mailThread = mailThreadRepository.findById(mailReplyDto.getThreadId()).orElseThrow(() -> new RuntimeException("Không tìm thấy hộp thoại"));
+        MailThread thread = mailThreadRepository.findById(mailReplyDto.getThreadId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc hội thoại"));
 
-        Mails lastMail = mailRepository.findTopByThreadOrderByCreatedAtDesc(mailThread);
-        if (lastMail == null) {
-            throw new RuntimeException("Không tìm thấy mail nào trong cuộc hội thoại");
-        }
+        // Tạo mail mới (dạng nhóm)
+        Mails reply = new Mails();
+        reply.setThread(thread);
+        reply.setSender(sender);
+        reply.setSubject(thread.getTitle().startsWith("Re: ") ? thread.getTitle() : "Re: " + thread.getTitle());
+        reply.setContent(encrypt(mailReplyDto.getContent()));
+        reply.setCreatedAt(LocalDateTime.now());
+        reply.setReceiver(null); // ❗️Vì đây là nhóm, không cần receiver cụ thể
 
-        Users receiver = lastMail.getSender().getId().equals(sender.getId()) ? lastMail.getReceiver() : lastMail.getSender();
-        Mails replyEmail = new Mails();
-        replyEmail.setThread(mailThread);
-        replyEmail.setSender(sender);
-        replyEmail.setReceiver(receiver);
-        replyEmail.setSubject(mailThread.getTitle().startsWith("Re: ")? mailThread.getTitle() : "Re: "+ mailThread.getTitle());
-        replyEmail.setContent(encrypt(mailReplyDto.getContent()));
-        replyEmail.setCreatedAt(LocalDateTime.now());
-
+        // Đính kèm nếu có
         MultipartFile file = mailReplyDto.getFile();
         if (file != null && !file.isEmpty()) {
-            String fileUrl = cloudinaryServiceImp.uploadFile(file);
-
             Attachment attachment = new Attachment();
             attachment.setFile_name(file.getOriginalFilename());
             attachment.setFile_type(file.getContentType());
             attachment.setFile_size(file.getSize());
-            attachment.setFile_url(fileUrl);
-            attachment.setMails(replyEmail);
-
-            replyEmail.getAttachments().add(attachment);
+            attachment.setFile_url(cloudinaryServiceImp.uploadFile(file));
+            attachment.setMails(reply);
+            reply.getAttachments().add(attachment);
         }
 
-        MailParticipant senderPart = mailParticipantRepository.findByThreadAndUsers(mailThread, sender);
-        if (senderPart == null) {
-            senderPart = new MailParticipant();
-            senderPart.setThread(mailThread);
-            senderPart.setUsers(sender);
-            senderPart.setRead(true);
-            senderPart.setSpam(false);
-            mailParticipantRepository.save(senderPart);
+        // Lưu mail (chỉ 1 bản ghi)
+        mailRepository.save(reply);
+
+        // Cập nhật trạng thái read của các participant
+        List<MailParticipant> participants = mailParticipantRepository.findByThreadId(thread.getId());
+        for (MailParticipant part : participants) {
+            if (part.getUsers().getId().equals(sender.getId())) {
+                part.setRead(true); // người gửi đã đọc
+            } else {
+                part.setRead(false); // người khác chưa đọc
+            }
+            mailParticipantRepository.save(part);
         }
-
-        MailParticipant receiverPart = mailParticipantRepository.findByThreadAndUsers(mailThread, receiver);
-        if (receiverPart == null) {
-            receiverPart = new MailParticipant();
-            receiverPart.setThread(mailThread);
-            receiverPart.setUsers(receiver);
-            receiverPart.setRead(false);
-            receiverPart.setSpam(false);
-            mailParticipantRepository.save(receiverPart);
-        } else {
-            receiverPart.setRead(false);
-            mailParticipantRepository.save(receiverPart);
-        }
-
-        mailRepository.save(replyEmail);
-
-
-
-
     }
-
-
     @Override
     public List<MailInboxDto> getInboxMails(Users user) {
         List<MailParticipant> participants = mailParticipantRepository.findMailByUsers(user);
-
         return participants.stream()
                 .map(participant -> {
                     MailThread thread = participant.getThread();
-
-                    // Lấy mail mới nhất trong thread
                     Mails lastMail = mailRepository.findTopByThreadOrderByCreatedAtDesc(thread);
+                    if (lastMail == null) return null;
 
-                    if (lastMail == null) {
-                        return null;
-                    }
+                    String content = lastMail.getContent() != null ? decrypt(lastMail.getContent()) : "";
+                    boolean isGroup = mailParticipantRepository.findByThreadId(thread.getId()).size() > 2;
+                    String receiverEmail = isGroup ? thread.getTitle() : lastMail.getReceiver().getEmail();
 
-                    // Giải mã nội dung
-                    String decryptedContent = (lastMail.getContent() != null)
-                            ? decrypt(lastMail.getContent())
-                            : "";
+                    List<String> group = isGroup ?
+                            mailParticipantRepository.findByThreadId(thread.getId())
+                                    .stream().map(p -> p.getUsers().getEmail()).collect(Collectors.toList())
+                            : null;
 
                     return new MailInboxDto(
                             thread.getId(),
+                            thread.getTitle(),
                             lastMail.getSubject(),
-                            decryptedContent, // ✅ Đã giải mã
+                            content,
                             lastMail.getSender().getEmail(),
-                            lastMail.getReceiver().getEmail(),
+                            receiverEmail,
+                            group,
                             lastMail.getCreatedAt(),
                             participant.getRead(),
                             participant.getSpam()
@@ -198,7 +133,6 @@ public class MailServiceImp implements MailService {
                 .collect(Collectors.toList());
     }
 
-
     @Override
     public MailInboxDetailDto getMailDetail(Long threadId, Users user) {
         MailThread mailThread = mailThreadRepository.findById(threadId)
@@ -207,31 +141,38 @@ public class MailServiceImp implements MailService {
         List<Mails> mails = mailRepository.findAllByThreadOrderByCreatedAtAsc(mailThread);
         List<MailResponseDto> mailDto = new ArrayList<>();
 
-        // Tìm thông tin participant 1 lần
+        // Đánh dấu đã đọc
         MailParticipant participant = mailParticipantRepository.findByThreadAndUsers(mailThread, user);
         if (participant != null && !participant.getRead()) {
-            participant.setRead(true); // đánh dấu đã đọc
+            participant.setRead(true);
             mailParticipantRepository.save(participant);
         }
 
         for (Mails mail : mails) {
             MailResponseDto mailResponseDto = new MailResponseDto();
             mailResponseDto.setMailId(mail.getId());
-            mailResponseDto.setSenderEmail(mail.getSender().getEmail());
-            mailResponseDto.setReceiverEmail(mail.getReceiver().getEmail());
-            mailResponseDto.setSenderName(mail.getSender().getFull_name());
-            mailResponseDto.setReceiverName(mail.getReceiver().getFull_name());
             mailResponseDto.setSubject(mail.getSubject());
             mailResponseDto.setContent(decrypt(mail.getContent()));
             mailResponseDto.setCreatedAt(mail.getCreatedAt());
 
-            // Gắn trạng thái read/spam theo participant
+            mailResponseDto.setSenderEmail(mail.getSender().getEmail());
+            mailResponseDto.setSenderName(mail.getSender().getFull_name());
+
+            // ✅ Check null receiver
+            if (mail.getReceiver() != null) {
+                mailResponseDto.setReceiverEmail(mail.getReceiver().getEmail());
+                mailResponseDto.setReceiverName(mail.getReceiver().getFull_name());
+            } else {
+                mailResponseDto.setReceiverEmail("Nhóm");
+                mailResponseDto.setReceiverName("Tất cả thành viên");
+            }
+
             if (participant != null) {
                 mailResponseDto.setIsRead(participant.getRead());
                 mailResponseDto.setIsSpam(participant.getSpam());
             }
 
-            // Gắn đính kèm
+            // Đính kèm nếu có
             if (mail.getAttachments() != null && !mail.getAttachments().isEmpty()) {
                 mailResponseDto.setAttachments(
                         mail.getAttachments().stream().map(att -> {
@@ -250,18 +191,19 @@ public class MailServiceImp implements MailService {
 
         return new MailInboxDetailDto(threadId, mailDto);
     }
+
     @Override
     public void markMailThreadAsRead(List<Long> threadId, Users user) {
-        List<MailParticipant> participants = mailParticipantRepository.findByThread_IdInAndUsers(threadId,user);
-        participants.forEach(participant -> {participant.setRead(true);});
-        mailParticipantRepository.saveAll(participants);
+        List<MailParticipant> list = mailParticipantRepository.findByThread_IdInAndUsers(threadId, user);
+        list.forEach(p -> p.setRead(true));
+        mailParticipantRepository.saveAll(list);
     }
 
     @Override
     public void markMailThreadAsSpam(List<Long> threadId, Users user) {
-        List<MailParticipant> participants = mailParticipantRepository.findByThread_IdInAndUsers(threadId,user);
-        participants.forEach(participant -> {participant.setSpam(true);});
-        mailParticipantRepository.saveAll(participants);
+        List<MailParticipant> list = mailParticipantRepository.findByThread_IdInAndUsers(threadId, user);
+        list.forEach(p -> p.setSpam(true));
+        mailParticipantRepository.saveAll(list);
     }
 
     @Override
@@ -270,18 +212,30 @@ public class MailServiceImp implements MailService {
         mailThread.setTitle(title);
         mailThreadRepository.save(mailThread);
 
-        MailParticipant participant = new MailParticipant(mailThread,creator,true,false);
-        mailParticipantRepository.save(participant);
+        // Thêm người tạo vào group
+        MailParticipant creatorParticipant = new MailParticipant(mailThread, creator, true, false);
+        mailParticipantRepository.save(creatorParticipant);
 
-        List<Users>  orther = userRepository.findAllByEmailIn(emails) ;
-        for (Users user : orther) {
-            MailParticipant mailParticipant = new MailParticipant(mailThread,user,true,false);
-            mailParticipantRepository.save(mailParticipant);
+        List<Users> receivers = userRepository.findAllByEmailIn(emails);
+
+        for (Users user : receivers) {
+            MailParticipant participant = new MailParticipant(mailThread, user, false, false);
+            mailParticipantRepository.save(participant);
         }
+
+        // 👉 Tạo 1 Mails duy nhất
+        Mails introMail = new Mails();
+        introMail.setThread(mailThread);
+        introMail.setSender(creator);
+        introMail.setSubject("Re: " + title);
+        introMail.setContent(encrypt("Nhóm \"" + title + "\" đã được tạo"));
+        introMail.setCreatedAt(LocalDateTime.now());
+
+        // 👇 KHÔNG setReceiver nữa, vì đây là mail nhóm
+        mailRepository.save(introMail);
 
         return mailThread.getId();
     }
-
 
     public String encrypt(String content) {
         return Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8));

@@ -14,6 +14,8 @@ public class Mails {
     private Long id;
 
     private String subject;
+
+    @Column(columnDefinition = "LONGTEXT")
     private String content;
 
     @Column(name = "create_date")
@@ -27,6 +29,9 @@ public class Mails {
     @ManyToOne
     @JoinColumn(name = "sender_id")
     private Users sender;
+
+    public Mails(Mails reply) {
+    }
 
     public Mails getMails() {
         return mails;

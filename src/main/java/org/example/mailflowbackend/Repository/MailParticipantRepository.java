@@ -3,7 +3,6 @@ package org.example.mailflowbackend.Repository;
 import org.example.mailflowbackend.Entity.MailParticipant;
 import org.example.mailflowbackend.Entity.MailThread;
 import org.example.mailflowbackend.Entity.Users;
-import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -33,4 +32,7 @@ public interface MailParticipantRepository extends JpaRepository<MailParticipant
     MailParticipant findByThreadAndUsers(MailThread thread, Users users);
 
     List<MailParticipant> findByThread_IdInAndUsers(List<Long> threadIds, Users user);
+
+
+    List<MailParticipant> findByThreadId(Long id);
 }
