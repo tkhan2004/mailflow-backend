@@ -114,7 +114,7 @@ public class MailServiceImp implements MailService {
         replyEmail.setThread(mailThread);
         replyEmail.setSender(sender);
         replyEmail.setReceiver(receiver);
-        replyEmail.setSubject(mailThread.getTitle());
+        replyEmail.setSubject(mailThread.getTitle().startsWith("Re: ")? mailThread.getTitle() : "Re: "+ mailThread.getTitle());
         replyEmail.setContent(encrypt(mailReplyDto.getContent()));
         replyEmail.setCreatedAt(LocalDateTime.now());
 
@@ -262,6 +262,24 @@ public class MailServiceImp implements MailService {
         List<MailParticipant> participants = mailParticipantRepository.findByThread_IdInAndUsers(threadId,user);
         participants.forEach(participant -> {participant.setSpam(true);});
         mailParticipantRepository.saveAll(participants);
+    }
+
+    @Override
+    public Long createGroup(List<String> emails, String title, Users creator) {
+        MailThread mailThread = new MailThread();
+        mailThread.setTitle(title);
+        mailThreadRepository.save(mailThread);
+
+        MailParticipant participant = new MailParticipant(mailThread,creator,true,false);
+        mailParticipantRepository.save(participant);
+
+        List<Users>  orther = userRepository.findAllByEmailIn(emails) ;
+        for (Users user : orther) {
+            MailParticipant mailParticipant = new MailParticipant(mailThread,user,true,false);
+            mailParticipantRepository.save(mailParticipant);
+        }
+
+        return mailThread.getId();
     }
 
 

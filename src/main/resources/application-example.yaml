@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/mailflow
     username: root
-    password:
+    password: your-password
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -23,4 +23,4 @@ springdoc:
     path: /swagger-ui.html
 
 jwt:
-  secret: 5SuHmZOnk+oRIcNIPz/Ec56QGaP2ILTuVzyODe0F2KY=
+  secret: your-secretkey

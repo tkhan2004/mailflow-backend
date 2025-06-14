@@ -82,12 +82,14 @@ public class MailController {
         return ResponseEntity.ok(new ApiResponse<>(200, "Gửi phản hồi thành công", mailReplyDto));
     }
 
+    // hộp thoại
     @GetMapping("/inbox")
     public ResponseEntity<ApiResponse<List<MailInboxDto>>> getMails(@AuthenticationPrincipal Users sender) {
         List<MailInboxDto> MailInboxDto = mailService.getInboxMails(sender);
         return ResponseEntity.ok(new ApiResponse<>(200, "Lấy hộp thoại thành công", MailInboxDto));
     }
 
+    // Xem chi tiết cuộc hội thoại
     @GetMapping("/inbox/thread/{threadId}")
     public ResponseEntity<ApiResponse<MailInboxDetailDto>>  getMailDetails(@PathVariable Long threadId, @AuthenticationPrincipal Users sender) {
         MailInboxDetailDto mailInboxDetailDto = mailService.getMailDetail(threadId, sender);
@@ -106,5 +108,20 @@ public class MailController {
         return ResponseEntity.ok(new ApiResponse<>(200, "Đánh dấu spam",null));
     }
 
+    @Operation(summary = "Tạo nhóm gửi mail", description = "Gửi email với tệp đính kèm")
+    @PostMapping(value = "/creat-group")
+    public ResponseEntity<ApiResponse<Long>> CreatGroup(
+            @Parameter(description = "Thêm email vào phòng")
+            @RequestParam("receiverEmail") List<String> receiverEmail,
+
+            @Parameter(description = "Tiêu đề email")
+            @RequestParam("subject") String subject,
+
+            @Parameter(description = "Người gửi", hidden = true)
+            @AuthenticationPrincipal Users sender){
+            Long threadId = mailService.createGroup(receiverEmail,subject,sender);
+            return ResponseEntity.ok(new ApiResponse<>(200, " Tạo Nhóm thành công", threadId));
+
+    }
 
 }

@@ -78,6 +78,13 @@ public class MailParticipant {
         this.isSpam = isSpam;
     }
 
+    public MailParticipant(MailThread thread, Users users, Boolean isRead, Boolean isSpam) {
+        this.thread = thread;
+        this.users = users;
+        this.isRead = isRead;
+        this.isSpam = isSpam;
+    }
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private Users users;
