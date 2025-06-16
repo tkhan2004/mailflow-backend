@@ -1,14 +1,19 @@
-# Sử dụng image Java 17 chính thức
-FROM eclipse-temurin:17-jdk
+# Sử dụng image có sẵn JDK và Maven
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 
-# Tạo thư mục chứa app trong container
 WORKDIR /app
 
-# Copy toàn bộ source code vào container
 COPY . .
 
-# Build ứng dụng (dùng Maven Wrapper nếu có)
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
-# Chạy ứng dụng bằng file JAR đã build
-CMD ["java", "-jar", "target/mailflow-backend-0.0.1-SNAPSHOT.jar"]
+# Image chạy ứng dụng
+FROM eclipse-temurin:17-jdk
+
+WORKDIR /app
+
+COPY --from=build /app/target/*.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
