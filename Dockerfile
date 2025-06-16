@@ -1,19 +1,23 @@
-# Sử dụng image có sẵn JDK và Maven
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+# Dockerfile
+
+# Base image có JDK 21
+FROM eclipse-temurin:21-jdk AS build
 
 WORKDIR /app
 
+# Copy source code và cấp quyền cho mvnw
 COPY . .
+RUN chmod +x mvnw
 
-RUN mvn clean package -DskipTests
+# Build dự án
+RUN ./mvnw clean package -DskipTests
 
-# Image chạy ứng dụng
-FROM eclipse-temurin:17-jdk
+# Image chạy app
+FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar"]
