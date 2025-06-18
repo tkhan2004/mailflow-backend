@@ -2,7 +2,6 @@ package org.example.mailflowbackend.Service.Imp;
 
 import org.example.mailflowbackend.Dto.AuthRequestDto;
 import org.example.mailflowbackend.Dto.LoginResponseDto;
-import org.example.mailflowbackend.Dto.RegisterRequestDto;
 import org.example.mailflowbackend.Entity.RefreshTokens;
 import org.example.mailflowbackend.Entity.Users;
 import org.example.mailflowbackend.Repository.RefreshTokenRepository;
@@ -14,7 +13,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,14 +33,20 @@ public class AuthServiceImp implements AuthService {
     private CloudinaryServiceImp cloudinaryServiceImp;
 
     @Autowired
+    private RefreshTokenServiceImp refreshTokenServiceImp;
+
+    @Autowired
     private RefreshTokenRepository refreshTokenRepository;
+
 
     @Override
     public LoginResponseDto login(AuthRequestDto authRequestDto) throws Exception {
+
         Users user = userRepository.findByEmail(authRequestDto.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(authRequestDto.getPassword(), user.getPassword())) {
+
+        if (! userRepository.findByEmail(authRequestDto.getEmail()).isPresent()) {
             throw new Exception("Sai mật khẩu");
         }
 
@@ -60,6 +64,8 @@ public class AuthServiceImp implements AuthService {
 
     @Override
     public void register(String full_name, String email, String password, String phone, MultipartFile avatar) throws Exception {
+
+
         if (userRepository.findByEmail(email).isPresent()) {
             throw new RuntimeException("Email đã tồn tại");
         }
@@ -78,13 +84,44 @@ public class AuthServiceImp implements AuthService {
         userRepository.save(user);
     }
 
+
+
     @Override
-    public String refreshToken(String refreshTokenStr) throws Exception {
-        RefreshTokens refreshTokens = refreshTokenRepository.findByToken(refreshTokenStr);
-        if (refreshTokens == null || refreshTokens.getExpiry_date().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Refresh token expired");
+    public Boolean isValidEmail(String email) {
+        // Email bình thường
+        boolean validFormat = email.matches("^[a-zA-Z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,6}$");
+
+        // Không chứa ký tự có dấu tiếng Việt
+        String normalized = java.text.Normalizer.normalize(email, java.text.Normalizer.Form.NFD);
+        boolean hasDiacritics = normalized.matches(".*\\p{InCombiningDiacriticalMarks}+.*");
+
+        return validFormat && !hasDiacritics;
+    }
+
+    @Override
+    public LoginResponseDto refreshAccessToken(AuthRequestDto authRequestDto)  {
+        Users user = userRepository.findByEmail(authRequestDto.getEmail())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        RefreshTokens refreshToken = refreshTokenRepository.findByUsers(user)
+                .orElseThrow(() -> new RuntimeException("Refresh token không tồn tại"));
+
+        if (!refreshToken.getToken().equals(authRequestDto.getPassword())) {
+            throw new RuntimeException("Refresh token không hợp lệ");
         }
 
-        return jwtUtil.generateToken(refreshTokens.getUsers().getEmail());
+        if (refreshTokenServiceImp.isExpired(refreshToken)) {
+            refreshTokenRepository.delete(refreshToken); // xoá nếu hết hạn
+            throw new RuntimeException("Refresh token đã hết hạn");
+        }
+
+        // Nếu hợp lệ → tạo access token mới
+        String newAccessToken = jwtUtil.generateToken(user.getEmail());
+
+        return new LoginResponseDto(
+                user.getEmail(),
+                newAccessToken,
+                refreshToken.getToken()
+        );
     }
-    }
+}

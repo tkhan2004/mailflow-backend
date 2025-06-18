@@ -96,13 +96,21 @@ public class MailController {
         return ResponseEntity.ok(new ApiResponse<>(200, "Chi tiết cuộc hội thoại", mailInboxDetailDto));
     }
 
-    @PostMapping("/mail/read-mail")
+    @PostMapping("/read-mail")
     public ResponseEntity<ApiResponse<MailInboxDto>> ReadMail(@RequestBody MailStatusRequestDto mailStatusRequestDto, @AuthenticationPrincipal Users sender) {
         mailService.markMailThreadAsRead(mailStatusRequestDto.getThreadId(), sender);
         return ResponseEntity.ok(new ApiResponse<>(200, "Đánh dấu là đã đọc",null));
     }
 
-    @PostMapping("/mail/spam-mail")
+    @PostMapping("/delete-threads")
+    public ResponseEntity<ApiResponse<?>> DeleteMail(@RequestBody List<Long> threadId, @AuthenticationPrincipal Users users) {
+        mailService.deleteGroup(threadId, users);
+        return ResponseEntity.ok(new ApiResponse<>(200, "Thành công xoá cuộc hội thoại khỏi hộp  thư",null));
+    }
+
+
+
+    @PostMapping("/spam-mail")
     public ResponseEntity<ApiResponse<MailInboxDto>> SpamMail(@RequestBody MailStatusRequestDto mailStatusRequestDto, @AuthenticationPrincipal Users sender) {
         mailService.markMailThreadAsSpam(mailStatusRequestDto.getThreadId(), sender);
         return ResponseEntity.ok(new ApiResponse<>(200, "Đánh dấu spam",null));

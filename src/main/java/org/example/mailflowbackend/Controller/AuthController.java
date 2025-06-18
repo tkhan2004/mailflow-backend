@@ -8,6 +8,7 @@ import org.example.mailflowbackend.Entity.Users;
 import org.example.mailflowbackend.Repository.UserRepository;
 import org.example.mailflowbackend.Security.JwtUtil;
 import org.example.mailflowbackend.Service.Imp.AuthServiceImp;
+import org.example.mailflowbackend.Service.Imp.RefreshTokenServiceImp;
 import org.example.mailflowbackend.payload.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,12 @@ public class AuthController {
     @Autowired
     private AuthServiceImp authServiceImp;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RefreshTokenServiceImp refreshTokenServiceImp;
+
     @PostMapping(value = "/register", consumes = {"multipart/form-data"})
     public ResponseEntity<ApiResponse<?>> register(
             @RequestPart("email") String email,
@@ -39,14 +46,37 @@ public class AuthController {
             @Parameter(description = "Avatar upload", schema = @Schema(type = "string", format = "binary"))
             @RequestPart(value = "avatar", required = false) MultipartFile avatar
     ) throws Exception {
+
+
+        if(!authServiceImp.isValidEmail(email)) {
+            return ResponseEntity.ok(new ApiResponse<>(200, "Email không đúng cú pháp", null));
+        }else {
         authServiceImp.register(fullName, email, password, phone, avatar);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Đăng ký thành công", null));
+        return ResponseEntity.ok(new ApiResponse<>(200, "Đăng ký thành công", null));}
     }
 
     @PostMapping(value = "/login")
     public ResponseEntity<ApiResponse<LoginResponseDto>> login(@RequestBody AuthRequestDto authRequestDto) throws Exception {
-        LoginResponseDto loginResponseDto = authServiceImp.login(authRequestDto);
-        return ResponseEntity.ok( new ApiResponse<>(200, "Đăng nhập thành công", loginResponseDto));
+
+        if(!userRepository.findByEmail(authRequestDto.getEmail()).isPresent()) {
+            return ResponseEntity.ok( new ApiResponse<>(200, "Sai tài khoản hoặc mật khẩu", null));
+        }else {LoginResponseDto loginResponseDto = authServiceImp.login(authRequestDto);
+            return ResponseEntity.ok( new ApiResponse<>(200, "Đăng nhập thành công", loginResponseDto));}
+
+    }
+
+    @PostMapping(value = "/Refresh-token")
+    public ResponseEntity<ApiResponse<LoginResponseDto>> refreshToken(@RequestBody AuthRequestDto authRequestDto) throws Exception {
+        try {
+            LoginResponseDto loginResponseDto = authServiceImp.refreshAccessToken(authRequestDto);
+            return ResponseEntity.ok(new ApiResponse<>(200, "Refresh token thành công", loginResponseDto));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    new ApiResponse<>(401, "Refresh token thất bại: " + e.getMessage(), null)
+            );
+        }
+
+
     }
 
 }

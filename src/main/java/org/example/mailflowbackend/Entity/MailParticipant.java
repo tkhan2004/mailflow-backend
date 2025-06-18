@@ -91,10 +91,16 @@ public class MailParticipant {
 
     private Boolean isRead = false;
     private Boolean isSpam = false;
+    private Boolean isDeleted = false;
 
+    public Boolean getDeleted() {
+        return isDeleted;
+    }
 
-
-    // Constructors
+    public void setDeleted(Boolean deleted) {
+        isDeleted = deleted;
+    }
+// Constructors
 
 
 

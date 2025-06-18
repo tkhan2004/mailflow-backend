@@ -63,16 +63,15 @@ public class MailServiceImp implements MailService {
         MailThread thread = mailThreadRepository.findById(mailReplyDto.getThreadId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc hội thoại"));
 
-        // Tạo mail mới (dạng nhóm)
-        Mails reply = new Mails();
-        reply.setThread(thread);
-        reply.setSender(sender);
-        reply.setSubject(thread.getTitle().startsWith("Re: ") ? thread.getTitle() : "Re: " + thread.getTitle());
-        reply.setContent(encrypt(mailReplyDto.getContent()));
-        reply.setCreatedAt(LocalDateTime.now());
-        reply.setReceiver(null); // ❗️Vì đây là nhóm, không cần receiver cụ thể
+        // Tạo mail mới
+        Mails mail = new Mails();
+        mail.setThread(thread);
+        mail.setSender(sender);
+        mail.setSubject(thread.getTitle().startsWith("Re: ") ? thread.getTitle() : "Re: " + thread.getTitle());
+        mail.setContent(encrypt(mailReplyDto.getContent()));
+        mail.setCreatedAt(LocalDateTime.now());
+        mail.setReceiver(null); // Vì là nhóm
 
-        // Đính kèm nếu có
         MultipartFile file = mailReplyDto.getFile();
         if (file != null && !file.isEmpty()) {
             Attachment attachment = new Attachment();
@@ -80,24 +79,26 @@ public class MailServiceImp implements MailService {
             attachment.setFile_type(file.getContentType());
             attachment.setFile_size(file.getSize());
             attachment.setFile_url(cloudinaryServiceImp.uploadFile(file));
-            attachment.setMails(reply);
-            reply.getAttachments().add(attachment);
+            attachment.setMails(mail);
+            mail.getAttachments().add(attachment);
         }
 
-        // Lưu mail (chỉ 1 bản ghi)
-        mailRepository.save(reply);
+        // Lưu mail
+        mailRepository.save(mail);
 
-        // Cập nhật trạng thái read của các participant
+        // Cập nhật trạng thái read của các thành viên
         List<MailParticipant> participants = mailParticipantRepository.findByThreadId(thread.getId());
-        for (MailParticipant part : participants) {
-            if (part.getUsers().getId().equals(sender.getId())) {
-                part.setRead(true); // người gửi đã đọc
+        for (MailParticipant p : participants) {
+            if (p.getUsers().getId().equals(sender.getId())) {
+                p.setRead(true); // Người gửi đã đọc
             } else {
-                part.setRead(false); // người khác chưa đọc
+                p.setRead(false); // Những người còn lại chưa đọc
             }
-            mailParticipantRepository.save(part);
+            mailParticipantRepository.save(p);
         }
     }
+
+
     @Override
     public List<MailInboxDto> getInboxMails(Users user) {
         List<MailParticipant> participants = mailParticipantRepository.findMailByUsers(user);
@@ -135,46 +136,44 @@ public class MailServiceImp implements MailService {
 
     @Override
     public MailInboxDetailDto getMailDetail(Long threadId, Users user) {
-        MailThread mailThread = mailThreadRepository.findById(threadId)
+        MailThread thread = mailThreadRepository.findById(threadId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc hội thoại"));
 
-        List<Mails> mails = mailRepository.findAllByThreadOrderByCreatedAtAsc(mailThread);
-        List<MailResponseDto> mailDto = new ArrayList<>();
-
-        // Đánh dấu đã đọc
-        MailParticipant participant = mailParticipantRepository.findByThreadAndUsers(mailThread, user);
+        // ✅ Đánh dấu là đã đọc
+        MailParticipant participant = mailParticipantRepository.findByThreadAndUsers(thread, user);
         if (participant != null && !participant.getRead()) {
             participant.setRead(true);
             mailParticipantRepository.save(participant);
         }
 
+        List<Mails> mails = mailRepository.findAllByThreadOrderByCreatedAtAsc(thread);
+        List<MailResponseDto> mailDtoList = new ArrayList<>();
+
         for (Mails mail : mails) {
-            MailResponseDto mailResponseDto = new MailResponseDto();
-            mailResponseDto.setMailId(mail.getId());
-            mailResponseDto.setSubject(mail.getSubject());
-            mailResponseDto.setContent(decrypt(mail.getContent()));
-            mailResponseDto.setCreatedAt(mail.getCreatedAt());
+            MailResponseDto dto = new MailResponseDto();
+            dto.setMailId(mail.getId());
+            dto.setSubject(mail.getSubject());
+            dto.setContent(decrypt(mail.getContent()));
+            dto.setCreatedAt(mail.getCreatedAt());
 
-            mailResponseDto.setSenderEmail(mail.getSender().getEmail());
-            mailResponseDto.setSenderName(mail.getSender().getFull_name());
+            dto.setSenderEmail(mail.getSender().getEmail());
+            dto.setSenderName(mail.getSender().getFull_name());
 
-            // ✅ Check null receiver
             if (mail.getReceiver() != null) {
-                mailResponseDto.setReceiverEmail(mail.getReceiver().getEmail());
-                mailResponseDto.setReceiverName(mail.getReceiver().getFull_name());
+                dto.setReceiverEmail(mail.getReceiver().getEmail());
+                dto.setReceiverName(mail.getReceiver().getFull_name());
             } else {
-                mailResponseDto.setReceiverEmail("Nhóm");
-                mailResponseDto.setReceiverName("Tất cả thành viên");
+                dto.setReceiverEmail("Nhóm");
+                dto.setReceiverName("Tất cả thành viên");
             }
 
             if (participant != null) {
-                mailResponseDto.setIsRead(participant.getRead());
-                mailResponseDto.setIsSpam(participant.getSpam());
+                dto.setIsRead(participant.getRead());
+                dto.setIsSpam(participant.getSpam());
             }
 
-            // Đính kèm nếu có
             if (mail.getAttachments() != null && !mail.getAttachments().isEmpty()) {
-                mailResponseDto.setAttachments(
+                dto.setAttachments(
                         mail.getAttachments().stream().map(att -> {
                             AttachmentResponseDto attDto = new AttachmentResponseDto();
                             attDto.setFileName(att.getFile_name());
@@ -186,10 +185,10 @@ public class MailServiceImp implements MailService {
                 );
             }
 
-            mailDto.add(mailResponseDto);
+            mailDtoList.add(dto);
         }
 
-        return new MailInboxDetailDto(threadId, mailDto);
+        return new MailInboxDetailDto(threadId, mailDtoList);
     }
 
     @Override
@@ -235,6 +234,12 @@ public class MailServiceImp implements MailService {
         mailRepository.save(introMail);
 
         return mailThread.getId();
+    }
+
+    @Override
+    public void deleteGroup(List<Long> threadId, Users user) {
+        List<MailParticipant> list = mailParticipantRepository.findByThread_IdInAndUsers(threadId, user);
+        list.forEach(participant -> participant.setRead(true));
     }
 
     public String encrypt(String content) {
