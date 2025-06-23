@@ -22,6 +22,7 @@ public class MailServiceImp implements MailService {
     @Autowired private UserRepository userRepository;
     @Autowired private AttachmentRepository attachmentRepository;
     @Autowired private MailParticipantRepository mailParticipantRepository;
+    @Autowired private NotificationServiceImp notificationServiceImp;
 
     @Override
     @Transactional
@@ -55,6 +56,7 @@ public class MailServiceImp implements MailService {
         }
 
         mailRepository.save(mail);
+        notificationServiceImp.notify(receiver.getEmail()," Bạn vừa có 1 thư mới từ " + sender.getEmail());
     }
 
     @Override
@@ -86,6 +88,7 @@ public class MailServiceImp implements MailService {
         // Lưu mail
         mailRepository.save(mail);
 
+
         // Cập nhật trạng thái read của các thành viên
         List<MailParticipant> participants = mailParticipantRepository.findByThreadId(thread.getId());
         for (MailParticipant p : participants) {
@@ -95,6 +98,14 @@ public class MailServiceImp implements MailService {
                 p.setRead(false); // Những người còn lại chưa đọc
             }
             mailParticipantRepository.save(p);
+        }
+        for (MailParticipant p : participants) {
+            if (!p.getUsers().getId().equals(sender.getId())) {
+                notificationServiceImp.notify(
+                        p.getUsers().getEmail(),
+                        "📨 Nhóm \"" + thread.getTitle() + "\" vừa có tin nhắn mới"
+                );
+            }
         }
     }
 
@@ -233,13 +244,20 @@ public class MailServiceImp implements MailService {
         // 👇 KHÔNG setReceiver nữa, vì đây là mail nhóm
         mailRepository.save(introMail);
 
+        for (Users user : receivers) {
+            if( !user.getId().equals(creator.getId())){
+                notificationServiceImp.notify(user.getEmail(),"Bạn vừa được thêm vào nhóm " + title);
+            }
+        }
+
         return mailThread.getId();
     }
 
     @Override
     public void deleteGroup(List<Long> threadId, Users user) {
         List<MailParticipant> list = mailParticipantRepository.findByThread_IdInAndUsers(threadId, user);
-        list.forEach(participant -> participant.setRead(true));
+        list.forEach(participant -> participant.setDeleted(true));
+        mailParticipantRepository.saveAll(list);
     }
 
     public String encrypt(String content) {
