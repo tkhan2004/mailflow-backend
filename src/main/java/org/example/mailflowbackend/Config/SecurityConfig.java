@@ -27,6 +27,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/v3/api-docs/**",
+                                "http://localhost:5173",
                                 "/api-docs/**",  // Thêm dòng này
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",

@@ -121,7 +121,11 @@ public class MailServiceImp implements MailService {
 
                     String content = lastMail.getContent() != null ? decrypt(lastMail.getContent()) : "";
                     boolean isGroup = mailParticipantRepository.findByThreadId(thread.getId()).size() > 2;
-                    String receiverEmail = isGroup ? thread.getTitle() : lastMail.getReceiver().getEmail();
+                    String receiverEmail = isGroup
+                            ? thread.getTitle()
+                            : Optional.ofNullable(lastMail.getReceiver())
+                            .map(Users::getEmail)
+                            .orElse("(không xác định)");
 
                     List<String> group = isGroup ?
                             mailParticipantRepository.findByThreadId(thread.getId())
