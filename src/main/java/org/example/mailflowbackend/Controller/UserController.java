@@ -1,5 +1,6 @@
 package org.example.mailflowbackend.Controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.example.mailflowbackend.Dto.ProfileResponeDto;
@@ -12,12 +13,15 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
     @Autowired
     private UserServiceImp userServiceImp;
 
+    @Operation(summary = "Thông tin cá nhân")
     @GetMapping("/my-profile")
     public ResponseEntity<ApiResponse<ProfileResponeDto>> myProfile(@AuthenticationPrincipal Users user){
         try {
@@ -28,6 +32,7 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "Cập nhật thông tin")
     @PutMapping(value = "/update-profile", consumes = {"multipart/form-data"})
     public ResponseEntity<ApiResponse<?>> updateProfile(@RequestPart("fullName") String fullName,
                                                         @RequestPart("phone") String phone,
@@ -43,6 +48,7 @@ public class UserController {
 
     }
 
+    @Operation(summary = "Đổi mật khẩu")
     @PatchMapping(value = "/change-pass", consumes = {"multipart/form-data"})
     public ResponseEntity<ApiResponse<?>> changePass(@RequestPart("Mật khẩu cũ") String oldPassword,
                                                      @RequestPart("Mật khẩu mới") String newPassword,
@@ -53,5 +59,18 @@ public class UserController {
         }catch (Exception e){
             return ResponseEntity.ok(new ApiResponse<>(400,"Đổi mật khẩu thất bại", null));
         }
+    }
+
+    @Operation(summary = "Gợi ý người dùng email")
+    @GetMapping("/search-mail")
+    public ResponseEntity<ApiResponse<List<String>>>  searchMail(@RequestParam("q") String keyword ,
+                                                           @AuthenticationPrincipal Users users){
+        try {
+            List<String>userSuccess = userServiceImp.seachUsers(keyword);
+            return ResponseEntity.ok(new ApiResponse<>(200, "Gợi ý người dùng thành công", userSuccess));
+        }catch (Exception e){
+            return ResponseEntity.ok(new ApiResponse<>(400, "Gợi ý người dùng thất bại", null));
+        }
+
     }
 }

@@ -74,46 +74,74 @@ public class MailController {
 
             @AuthenticationPrincipal Users sender
     ) throws Exception {
-        MailReplyDto mailReplyDto = new MailReplyDto();
-        mailReplyDto.setThreadId(threadId);
-        mailReplyDto.setContent(content);
-        mailReplyDto.setFile(file);
-        mailService.replyMail(mailReplyDto,sender);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Gửi phản hồi thành công", mailReplyDto));
+        try {
+            MailReplyDto mailReplyDto = new MailReplyDto();
+            mailReplyDto.setThreadId(threadId);
+            mailReplyDto.setContent(content);
+            mailReplyDto.setFile(file);
+            mailService.replyMail(mailReplyDto,sender);
+            return ResponseEntity.ok(new ApiResponse<>(200, "Gửi phản hồi thành công", mailReplyDto));
+        }catch (Exception e){
+            return ResponseEntity.ok(new ApiResponse<>(400, "Gửi phản hồi thất bại", null));
+        }
+
     }
 
     // hộp thoại
     @GetMapping("/inbox")
     public ResponseEntity<ApiResponse<List<MailInboxDto>>> getMails(@AuthenticationPrincipal Users sender) {
-        List<MailInboxDto> MailInboxDto = mailService.getInboxMails(sender);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Lấy hộp thoại thành công", MailInboxDto));
+        try {
+            List<MailInboxDto> MailInboxDto = mailService.getInboxMails(sender);
+            return ResponseEntity.ok(new ApiResponse<>(200, "Lấy hộp thoại thành công", MailInboxDto));
+        }catch (Exception e){
+            return ResponseEntity.ok(new ApiResponse<>(200, "Lấy hộp thoại thất bại", null));
+        }
+
     }
 
     // Xem chi tiết cuộc hội thoại
     @GetMapping("/inbox/thread/{threadId}")
     public ResponseEntity<ApiResponse<MailInboxDetailDto>>  getMailDetails(@PathVariable Long threadId, @AuthenticationPrincipal Users sender) {
-        MailInboxDetailDto mailInboxDetailDto = mailService.getMailDetail(threadId, sender);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Chi tiết cuộc hội thoại", mailInboxDetailDto));
+        try {
+            MailInboxDetailDto mailInboxDetailDto = mailService.getMailDetail(threadId, sender);
+            return ResponseEntity.ok(new ApiResponse<>(200, "Chi tiết cuộc hội thoại", mailInboxDetailDto));
+        }catch (Exception e){
+            return ResponseEntity.ok(new ApiResponse<>(400, "Chi tiết cuộc hội thoại thất bại", null));
+        }
     }
 
     @PostMapping("/read-mail")
     public ResponseEntity<ApiResponse<MailInboxDto>> ReadMail(@RequestBody MailStatusRequestDto mailStatusRequestDto, @AuthenticationPrincipal Users sender) {
-        mailService.markMailThreadAsRead(mailStatusRequestDto.getThreadId(), sender);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Đánh dấu là đã đọc",null));
+        try {
+            mailService.markMailThreadAsRead(mailStatusRequestDto.getThreadId(), sender);
+            return ResponseEntity.ok(new ApiResponse<>(200, "Đánh dấu là đã đọc",null));
+        }catch (Exception e){
+            return ResponseEntity.ok(new ApiResponse<>(400, "Đánh dấu thất bại",null));
+        }
     }
 
     @PostMapping("/delete-threads")
     public ResponseEntity<ApiResponse<?>> DeleteMail(@RequestBody List<Long> threadId, @AuthenticationPrincipal Users users) {
-        mailService.deleteGroup(threadId, users);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Thành công xoá cuộc hội thoại khỏi hộp  thư",null));
+        try {
+            mailService.deleteGroup(threadId, users);
+            return ResponseEntity.ok(new ApiResponse<>(200, "Thành công xoá cuộc hội thoại khỏi hộp  thư",null));
+        }catch (Exception e){
+            return ResponseEntity.ok(new ApiResponse<>(400, "Đánh dấu thất bại",null));
+        }
     }
 
 
 
     @PostMapping("/spam-mail")
     public ResponseEntity<ApiResponse<MailInboxDto>> SpamMail(@RequestBody MailStatusRequestDto mailStatusRequestDto, @AuthenticationPrincipal Users sender) {
-        mailService.markMailThreadAsSpam(mailStatusRequestDto.getThreadId(), sender);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Đánh dấu spam",null));
+
+        try {
+            mailService.markMailThreadAsSpam(mailStatusRequestDto.getThreadId(), sender);
+            return ResponseEntity.ok(new ApiResponse<>(200, "Đánh dấu spam",null));
+        }
+            catch (Exception e){
+                return ResponseEntity.ok(new ApiResponse<>(400, "Đánh dấu thất bại",null));
+            }
     }
 
     @Operation(summary = "Tạo nhóm gửi mail", description = "Gửi email với tệp đính kèm")
@@ -127,8 +155,12 @@ public class MailController {
 
             @Parameter(description = "Người gửi", hidden = true)
             @AuthenticationPrincipal Users sender){
-            Long threadId = mailService.createGroup(receiverEmail,subject,sender);
-            return ResponseEntity.ok(new ApiResponse<>(200, " Tạo Nhóm thành công", threadId));
+            try {
+                Long threadId = mailService.createGroup(receiverEmail,subject,sender);
+                return ResponseEntity.ok(new ApiResponse<>(200, " Tạo Nhóm thành công", threadId));
+            }catch (Exception e){
+                return ResponseEntity.ok(new ApiResponse<>(400, " Tạo Nhóm thất bại", null));
+            }
 
     }
 
