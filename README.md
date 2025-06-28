@@ -43,7 +43,7 @@ MailFlow là một hệ thống gửi và nhận email được xây dựng vớ
 
 ```bash
 # 1. Clone repo
-git clone https://github.com/your-username/mailflow.git
+git clone https://github.com/tkhan2004/mailflow-backend.git
 cd mailflow
 
 # 2. Cấu hình file application.yml
