@@ -1,7 +1,7 @@
 
-# 📧 MailFlow - Smart Internal Mail System with AI Assistant
+# 📧 MailFlow 
 
-MailFlow là hệ thống gửi/nhận email nội bộ hỗ trợ nhóm hoặc cá nhân, có tích hợp AI để hỗ trợ người dùng soạn thư chuyên nghiệp. Dự án được phát triển với mục tiêu nâng cao hiệu suất giao tiếp nội bộ và trải nghiệm người dùng nhờ các tính năng thông minh như real-time notification và gợi ý soạn thư.
+MailFlow là một hệ thống gửi và nhận email được xây dựng với mục tiêu mô phỏng và mở rộng các chức năng chính của Gmail. Ngoài các tính năng cơ bản như gửi email cá nhân hoặc nhóm, hệ thống còn tích hợp các chức năng nâng cao như mã hóa nội dung, gợi ý email người nhận, phân loại thư, hỗ trợ AI viết thư, và thông báo real-time.
 
 ---
 
