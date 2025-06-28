@@ -24,3 +24,7 @@ springdoc:
 
 jwt:
   secret: ${JWT_SECRET}
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}
