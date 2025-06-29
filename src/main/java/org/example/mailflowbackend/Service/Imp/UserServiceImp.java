@@ -43,13 +43,16 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public void changePass(String email,String oldPassword ,String newPassword) {
-        Users user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Mail không tồn tại"));
+    public void changePass(String email, String oldPassword, String newPassword) {
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Mail không tồn tại"));
 
-        if (passwordEncoder.matches(oldPassword, user.getPassword() )) {
-            user.setPassword(passwordEncoder.encode(newPassword));
-            userRepository.save(user);
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("Mật khẩu cũ không đúng");
         }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 
     @Override

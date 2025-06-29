@@ -46,8 +46,8 @@ public class AuthServiceImp implements AuthService {
                 .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
 
-        if (! userRepository.findByEmail(authRequestDto.getEmail()).isPresent()) {
-            throw new Exception("Sai mật khẩu");
+        if (!passwordEncoder.matches(authRequestDto.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Sai email hoặc mật khẩu");
         }
 
         String accessToken = jwtUtil.generateToken(user.getEmail());

@@ -57,11 +57,13 @@ public class AuthController {
 
     @PostMapping(value = "/login")
     public ResponseEntity<ApiResponse<LoginResponseDto>> login(@RequestBody AuthRequestDto authRequestDto) throws Exception {
+        try{
+            LoginResponseDto loginResponseDto = authServiceImp.login(authRequestDto);
+            return ResponseEntity.ok( new ApiResponse<>(200, "Đăng nhập thành công", loginResponseDto));
+        }catch(Exception e){
+            return ResponseEntity.ok( new ApiResponse<>(400, "Đăng nhập thất bại, sai tài khoàn hoặc mật khẩu", null));
+        }
 
-        if(!userRepository.findByEmail(authRequestDto.getEmail()).isPresent()) {
-            return ResponseEntity.ok( new ApiResponse<>(200, "Sai tài khoản hoặc mật khẩu", null));
-        }else {LoginResponseDto loginResponseDto = authServiceImp.login(authRequestDto);
-            return ResponseEntity.ok( new ApiResponse<>(200, "Đăng nhập thành công", loginResponseDto));}
 
     }
 
