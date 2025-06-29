@@ -23,7 +23,7 @@ public class AiController {
     public ResponseEntity<ApiResponse<AiMailResponseDto>> generateAiMail(@RequestParam String prompt,
                                                                          @AuthenticationPrincipal Users sender){
         try {
-            AiMailResponseDto aiMailResponseDto = aiMailServiceImp.generateAiMail(prompt);
+            AiMailResponseDto aiMailResponseDto = aiMailServiceImp.generateAiMail(prompt, sender.getFull_name());
             return ResponseEntity.ok(new ApiResponse<>(200, "Chat thành công", aiMailResponseDto));
         }catch (Exception e){
             e.printStackTrace();

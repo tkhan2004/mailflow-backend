@@ -34,7 +34,7 @@ public class AiMailServiceImp implements AiMailService {
     private static final Logger logger = LoggerFactory.getLogger(AiMailServiceImp.class);
 
     @Override
-    public AiMailResponseDto generateAiMail(String prompt) {
+    public AiMailResponseDto generateAiMail(String prompt,String fullName) {
         // Tạo prompt yêu cầu Gemini trả về JSON thuần
         String systemPrompt = """
         Bạn là một chuyên gia viết mail chuyên nghiệp. 
@@ -46,10 +46,11 @@ public class AiMailServiceImp implements AiMailService {
         }
         KHÔNG viết gì ngoài JSON. Không chú thích. Không markdown.
         """;
+        String finalPrompt = systemPrompt + "\n\nUser name: " + fullName + "\n\n" + prompt;
 
         Map<String, Object> userMessage = Map.of(
                 "role", "user",
-                "parts", List.of(Map.of("text", systemPrompt + "\n\n" + prompt))
+                "parts", List.of(Map.of("text", finalPrompt + "\n\n" + prompt))
         );
 
         Map<String, Object> body = Map.of(
