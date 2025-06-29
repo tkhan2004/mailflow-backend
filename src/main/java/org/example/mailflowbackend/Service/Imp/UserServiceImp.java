@@ -56,7 +56,7 @@ public class UserServiceImp implements UserService {
     public ProfileResponeDto getProfile(String email) {
         Users user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Mail không tồn tại"));
 
-        ProfileResponeDto profileResponeDto = new ProfileResponeDto(user.getAvatar(), user.getEmail(),  user.getFull_name(), user.getPhone());
+        ProfileResponeDto profileResponeDto = new ProfileResponeDto(user.getEmail(), user.getFull_name(),user.getPhone(),user.getAvatar());
         return profileResponeDto;
     }
 
