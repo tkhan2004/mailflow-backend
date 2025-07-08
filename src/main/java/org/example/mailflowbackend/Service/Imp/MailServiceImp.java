@@ -65,15 +65,37 @@ public class MailServiceImp implements MailService {
         MailThread thread = mailThreadRepository.findById(mailReplyDto.getThreadId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc hội thoại"));
 
-        // Tạo mail mới
         Mails mail = new Mails();
         mail.setThread(thread);
         mail.setSender(sender);
         mail.setSubject(thread.getTitle().startsWith("Re: ") ? thread.getTitle() : "Re: " + thread.getTitle());
         mail.setContent(encrypt(mailReplyDto.getContent()));
         mail.setCreatedAt(LocalDateTime.now());
-        mail.setReceiver(null); // Vì là nhóm
 
+        // ✅ Xác định danh sách participants
+        List<MailParticipant> participants = mailParticipantRepository.findByThreadId(thread.getId());
+        boolean isGroup = participants.size() > 2;
+
+        // ✅ Xác định người nhận
+        if (mailReplyDto.getReceiverId() != null) {
+            // Trường hợp có chỉ định rõ người nhận
+            Users receiver = userRepository.findById(mailReplyDto.getReceiverId())
+                    .orElseThrow(() -> new RuntimeException("Người nhận không tồn tại"));
+            mail.setReceiver(receiver);
+        } else if (!isGroup) {
+            // Trường hợp là cuộc trò chuyện 1-1 → tự động gán người còn lại
+            for (MailParticipant p : participants) {
+                if (!p.getUsers().getId().equals(sender.getId())) {
+                    mail.setReceiver(p.getUsers());
+                    break;
+                }
+            }
+        } else {
+            // Trả lời nhóm
+            mail.setReceiver(null);
+        }
+
+        // ✅ Xử lý file đính kèm (nếu có)
         MultipartFile file = mailReplyDto.getFile();
         if (file != null && !file.isEmpty()) {
             Attachment attachment = new Attachment();
@@ -85,27 +107,29 @@ public class MailServiceImp implements MailService {
             mail.getAttachments().add(attachment);
         }
 
-        // Lưu mail
+        // ✅ Lưu mail
         mailRepository.save(mail);
 
+        // ✅ Cập nhật trạng thái đọc + thông báo
+        if (mail.getReceiver() == null) {
+            // Trường hợp nhóm
+            for (MailParticipant p : participants) {
+                p.setRead(p.getUsers().getId().equals(sender.getId()));
+                mailParticipantRepository.save(p);
 
-        // Cập nhật trạng thái read của các thành viên
-        List<MailParticipant> participants = mailParticipantRepository.findByThreadId(thread.getId());
-        for (MailParticipant p : participants) {
-            if (p.getUsers().getId().equals(sender.getId())) {
-                p.setRead(true); // Người gửi đã đọc
-            } else {
-                p.setRead(false); // Những người còn lại chưa đọc
+                if (!p.getUsers().getId().equals(sender.getId())) {
+                    notificationServiceImp.notify(
+                            p.getUsers().getEmail(),
+                            "📨 Nhóm \"" + thread.getTitle() + "\" vừa có tin nhắn mới"
+                    );
+                }
             }
-            mailParticipantRepository.save(p);
-        }
-        for (MailParticipant p : participants) {
-            if (!p.getUsers().getId().equals(sender.getId())) {
-                notificationServiceImp.notify(
-                        p.getUsers().getEmail(),
-                        "📨 Nhóm \"" + thread.getTitle() + "\" vừa có tin nhắn mới"
-                );
-            }
+        } else {
+            // Trường hợp cá nhân
+            notificationServiceImp.notify(
+                    mail.getReceiver().getEmail(),
+                    "📨 Bạn vừa nhận một tin nhắn trong cuộc trò chuyện \"" + thread.getTitle() + "\""
+            );
         }
     }
 
@@ -142,7 +166,8 @@ public class MailServiceImp implements MailService {
                             group,
                             lastMail.getCreatedAt(),
                             participant.getRead(),
-                            participant.getSpam()
+                            participant.getSpam(),
+                            participant.getDeleted()
                     );
                 })
                 .filter(Objects::nonNull)

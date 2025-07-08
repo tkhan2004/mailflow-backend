@@ -33,13 +33,9 @@ public class Mails {
     public Mails(Mails reply) {
     }
 
-    public Mails getMails() {
-        return mails;
-    }
 
-    public void setMails(Mails mails) {
-        this.mails = mails;
-    }
+
+
 
     @ManyToOne
     @JoinColumn(name = "receiver_id")
@@ -56,11 +52,6 @@ public class Mails {
     public void setMailParticipants(List<MailParticipant> mailParticipants) {
         this.mailParticipants = mailParticipants;
     }
-
-    @ManyToOne
-    @JoinColumn(name = "mails_id")
-    private Mails mails;
-
 
     // Constructors
     public Mails() {

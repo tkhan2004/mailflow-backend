@@ -19,4 +19,5 @@ public class MailInboxDto {
     private LocalDateTime lastCreatedAt;
     private boolean isRead;
     private boolean isSpam;
+    private boolean isDeleted;
 }

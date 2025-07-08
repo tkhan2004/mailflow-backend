@@ -14,4 +14,7 @@ public class MailReplyDto {
 
     @Schema(description = "file đính kèm", type = "string", format = "binary")
     private MultipartFile file;
+
+    private Long receiverId; // Thêm trường này để biết đang reply cá nhân
+
 }
