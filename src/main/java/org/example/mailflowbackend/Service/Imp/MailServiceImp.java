@@ -246,6 +246,13 @@ public class MailServiceImp implements MailService {
     }
 
     @Override
+    public void unSpamMailThread(List<Long> threadId, Users user) {
+        List<MailParticipant> list = mailParticipantRepository.findByThread_IdInAndUsers(threadId, user);
+        list.forEach(p -> p.setSpam(false));
+        mailParticipantRepository.saveAll(list);
+    }
+
+    @Override
     public Long createGroup(List<String> emails, String title, Users creator) {
         MailThread mailThread = new MailThread();
         mailThread.setTitle(title);

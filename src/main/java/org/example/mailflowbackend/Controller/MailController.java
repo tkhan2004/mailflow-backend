@@ -94,7 +94,7 @@ public class MailController {
             List<MailInboxDto> MailInboxDto = mailService.getInboxMails(sender);
             return ResponseEntity.ok(new ApiResponse<>(200, "Lấy hộp thoại thành công", MailInboxDto));
         }catch (Exception e){
-            return ResponseEntity.ok(new ApiResponse<>(200, "Lấy hộp thoại thất bại", null));
+            return ResponseEntity.ok(new ApiResponse<>(400, "Lấy hộp thoại thất bại", null));
         }
 
     }
@@ -127,6 +127,16 @@ public class MailController {
             return ResponseEntity.ok(new ApiResponse<>(200, "Thành công xoá cuộc hội thoại khỏi hộp  thư",null));
         }catch (Exception e){
             return ResponseEntity.ok(new ApiResponse<>(400, "Đánh dấu thất bại",null));
+        }
+    }
+
+    @PostMapping("/un-spam-mail")
+    public ResponseEntity<ApiResponse<MailInboxDto>> UnSpamMail(@RequestBody MailStatusRequestDto mailStatusRequestDto, @AuthenticationPrincipal Users sender) {
+        try {
+            mailService.unSpamMailThread(mailStatusRequestDto.getThreadId(), sender);
+            return ResponseEntity.ok(new ApiResponse<>(200,"Huỷ spam thành công",null));
+        }catch (Exception e){
+            return ResponseEntity.ok(new ApiResponse<>(400,"Huỷ spam thất bại",null));
         }
     }
 

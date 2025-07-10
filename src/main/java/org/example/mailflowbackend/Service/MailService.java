@@ -21,6 +21,8 @@ public interface MailService {
 
     void markMailThreadAsSpam(List<Long> threadId, Users user);
 
+    void unSpamMailThread(List<Long> threadId, Users user);
+
     Long createGroup(List<String> emails,String title ,Users creator);
 
     void deleteGroup(List<Long> threadId, Users user);
