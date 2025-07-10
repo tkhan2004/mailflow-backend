@@ -49,7 +49,7 @@ public class AuthController {
 
 
         if(!authServiceImp.isValidEmail(email)) {
-            return ResponseEntity.ok(new ApiResponse<>(200, "Email không đúng cú pháp", null));
+            return ResponseEntity.ok(new ApiResponse<>(400, "Email không đúng cú pháp", null));
         }else {
         authServiceImp.register(fullName, email, password, phone, avatar);
         return ResponseEntity.ok(new ApiResponse<>(200, "Đăng ký thành công", null));}
