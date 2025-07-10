@@ -26,7 +26,7 @@ import java.util.List;
 @RequestMapping("/api/mail")
 public class MailController {
     @Autowired
-    private MailServiceImp mailService;
+    private MailService mailService;
 
     @Operation(summary = "Gửi email", description = "Gửi email với tệp đính kèm")
     @PostMapping(value = "/send", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

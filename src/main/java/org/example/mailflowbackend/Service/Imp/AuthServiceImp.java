@@ -8,6 +8,8 @@ import org.example.mailflowbackend.Repository.RefreshTokenRepository;
 import org.example.mailflowbackend.Repository.UserRepository;
 import org.example.mailflowbackend.Security.JwtUtil;
 import org.example.mailflowbackend.Service.AuthService;
+import org.example.mailflowbackend.Service.CloudinaryService;
+import org.example.mailflowbackend.Service.RefreshTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,10 +32,10 @@ public class AuthServiceImp implements AuthService {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private CloudinaryServiceImp cloudinaryServiceImp;
+    private CloudinaryService cloudinaryService;
 
     @Autowired
-    private RefreshTokenServiceImp refreshTokenServiceImp;
+    private RefreshTokenService refreshTokenService;
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
@@ -77,7 +79,7 @@ public class AuthServiceImp implements AuthService {
         user.setPhone(phone);
 
         if (avatar != null && !avatar.isEmpty()) {
-            String avatarUrl = cloudinaryServiceImp.uploadFile(avatar);
+            String avatarUrl = cloudinaryService.uploadFile(avatar);
             user.setAvatar(avatarUrl);
         }
 
@@ -110,7 +112,7 @@ public class AuthServiceImp implements AuthService {
             throw new RuntimeException("Refresh token không hợp lệ");
         }
 
-        if (refreshTokenServiceImp.isExpired(refreshToken)) {
+        if (refreshTokenService.isExpired(refreshToken)) {
             refreshTokenRepository.delete(refreshToken); // xoá nếu hết hạn
             throw new RuntimeException("Refresh token đã hết hạn");
         }

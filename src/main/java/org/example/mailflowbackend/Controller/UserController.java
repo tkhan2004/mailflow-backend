@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import org.example.mailflowbackend.Dto.ProfileResponeDto;
 import org.example.mailflowbackend.Entity.Users;
 import org.example.mailflowbackend.Service.Imp.UserServiceImp;
+import org.example.mailflowbackend.Service.UserService;
 import org.example.mailflowbackend.payload.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,13 +20,13 @@ import java.util.List;
 @RequestMapping("/api/user")
 public class UserController {
     @Autowired
-    private UserServiceImp userServiceImp;
+    private UserService userService;
 
     @Operation(summary = "Thông tin cá nhân")
     @GetMapping("/my-profile")
     public ResponseEntity<ApiResponse<ProfileResponeDto>> myProfile(@AuthenticationPrincipal Users user){
         try {
-            ProfileResponeDto profileResponeDto = userServiceImp.getProfile(user.getEmail());
+            ProfileResponeDto profileResponeDto = userService.getProfile(user.getEmail());
             return ResponseEntity.ok(new ApiResponse<>(200, "Lấy thông tin thành công", profileResponeDto));
         } catch (Exception e) {
             return ResponseEntity.ok(new ApiResponse<>(400, "Lấy thông tin thành công", null));
@@ -40,7 +41,7 @@ public class UserController {
                                                             @RequestPart(value = "avatar", required = false) MultipartFile avatar,
                                                         @AuthenticationPrincipal Users users) {
         try {
-            userServiceImp.updateUsers(users.getEmail(), fullName, phone, avatar);
+            userService.updateUsers(users.getEmail(), fullName, phone, avatar);
             return ResponseEntity.ok(new ApiResponse<>(200, " Cập nhật thông tin thành công", null));
         }catch (Exception e){
             return ResponseEntity.ok(new ApiResponse<>(400, " Cập nhật thông tin thất bại", null));
@@ -54,7 +55,7 @@ public class UserController {
                                                      @RequestPart("Mật khẩu mới") String newPassword,
                                                      @AuthenticationPrincipal Users users) {
         try {
-            userServiceImp.changePass(users.getEmail(),oldPassword ,newPassword);
+            userService.changePass(users.getEmail(),oldPassword ,newPassword);
             return ResponseEntity.ok(new ApiResponse<>(200,"Đổi mật khẩu thành công", null));
         }catch (Exception e){
             return ResponseEntity.ok(new ApiResponse<>(400,"Đổi mật khẩu thất bại", null));
@@ -66,7 +67,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<List<String>>>  searchMail(@RequestParam("q") String keyword ,
                                                            @AuthenticationPrincipal Users users){
         try {
-            List<String>userSuccess = userServiceImp.seachUsers(keyword);
+            List<String>userSuccess = userService.seachUsers(keyword);
             return ResponseEntity.ok(new ApiResponse<>(200, "Gợi ý người dùng thành công", userSuccess));
         }catch (Exception e){
             return ResponseEntity.ok(new ApiResponse<>(400, "Gợi ý người dùng thất bại", null));

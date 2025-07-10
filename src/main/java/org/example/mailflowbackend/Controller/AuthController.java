@@ -7,6 +7,7 @@ import org.example.mailflowbackend.Dto.LoginResponseDto;
 import org.example.mailflowbackend.Entity.Users;
 import org.example.mailflowbackend.Repository.UserRepository;
 import org.example.mailflowbackend.Security.JwtUtil;
+import org.example.mailflowbackend.Service.AuthService;
 import org.example.mailflowbackend.Service.Imp.AuthServiceImp;
 import org.example.mailflowbackend.Service.Imp.RefreshTokenServiceImp;
 import org.example.mailflowbackend.payload.ApiResponse;
@@ -29,7 +30,7 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private AuthServiceImp authServiceImp;
+    private AuthService authService;
 
     @Autowired
     private UserRepository userRepository;
@@ -48,17 +49,17 @@ public class AuthController {
     ) throws Exception {
 
 
-        if(!authServiceImp.isValidEmail(email)) {
+        if(!authService.isValidEmail(email)) {
             return ResponseEntity.ok(new ApiResponse<>(400, "Email không đúng cú pháp", null));
         }else {
-        authServiceImp.register(fullName, email, password, phone, avatar);
+            authService.register(fullName, email, password, phone, avatar);
         return ResponseEntity.ok(new ApiResponse<>(200, "Đăng ký thành công", null));}
     }
 
     @PostMapping(value = "/login")
     public ResponseEntity<ApiResponse<LoginResponseDto>> login(@RequestBody AuthRequestDto authRequestDto) throws Exception {
         try{
-            LoginResponseDto loginResponseDto = authServiceImp.login(authRequestDto);
+            LoginResponseDto loginResponseDto = authService.login(authRequestDto);
             return ResponseEntity.ok( new ApiResponse<>(200, "Đăng nhập thành công", loginResponseDto));
         }catch(Exception e){
             return ResponseEntity.ok( new ApiResponse<>(400, "Đăng nhập thất bại, sai tài khoàn hoặc mật khẩu", null));
@@ -70,7 +71,7 @@ public class AuthController {
     @PostMapping(value = "/Refresh-token")
     public ResponseEntity<ApiResponse<LoginResponseDto>> refreshToken(@RequestBody AuthRequestDto authRequestDto) throws Exception {
         try {
-            LoginResponseDto loginResponseDto = authServiceImp.refreshAccessToken(authRequestDto);
+            LoginResponseDto loginResponseDto = authService.refreshAccessToken(authRequestDto);
             return ResponseEntity.ok(new ApiResponse<>(200, "Refresh token thành công", loginResponseDto));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(

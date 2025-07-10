@@ -5,4 +5,5 @@ import org.example.mailflowbackend.Entity.Users;
 
 public interface RefreshTokenService {
     public RefreshTokens creatRefreshToken(Users users);
+    public boolean isExpired(RefreshTokens token);
 }

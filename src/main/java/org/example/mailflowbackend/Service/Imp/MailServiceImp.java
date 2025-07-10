@@ -3,7 +3,9 @@ package org.example.mailflowbackend.Service.Imp;
 import org.example.mailflowbackend.Dto.*;
 import org.example.mailflowbackend.Entity.*;
 import org.example.mailflowbackend.Repository.*;
+import org.example.mailflowbackend.Service.CloudinaryService;
 import org.example.mailflowbackend.Service.MailService;
+import org.example.mailflowbackend.Service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,13 +18,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class MailServiceImp implements MailService {
-    @Autowired private CloudinaryServiceImp cloudinaryServiceImp;
+    @Autowired private CloudinaryService cloudinaryService;
     @Autowired private MailRepository mailRepository;
     @Autowired private MailThreadRepository mailThreadRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private AttachmentRepository attachmentRepository;
     @Autowired private MailParticipantRepository mailParticipantRepository;
-    @Autowired private NotificationServiceImp notificationServiceImp;
+    @Autowired private NotificationService notificationService;
 
     @Override
     @Transactional
@@ -50,13 +52,13 @@ public class MailServiceImp implements MailService {
             attachment.setFile_name(file.getOriginalFilename());
             attachment.setFile_type(file.getContentType());
             attachment.setFile_size(file.getSize());
-            attachment.setFile_url(cloudinaryServiceImp.uploadFile(file));
+            attachment.setFile_url(cloudinaryService.uploadFile(file));
             attachment.setMails(mail);
             mail.getAttachments().add(attachment);
         }
 
         mailRepository.save(mail);
-        notificationServiceImp.notify(receiver.getEmail()," Bạn vừa có 1 thư mới từ " + sender.getEmail());
+        notificationService.notify(receiver.getEmail()," Bạn vừa có 1 thư mới từ " + sender.getEmail());
     }
 
     @Override
@@ -102,7 +104,7 @@ public class MailServiceImp implements MailService {
             attachment.setFile_name(file.getOriginalFilename());
             attachment.setFile_type(file.getContentType());
             attachment.setFile_size(file.getSize());
-            attachment.setFile_url(cloudinaryServiceImp.uploadFile(file));
+            attachment.setFile_url(cloudinaryService.uploadFile(file));
             attachment.setMails(mail);
             mail.getAttachments().add(attachment);
         }
@@ -118,7 +120,7 @@ public class MailServiceImp implements MailService {
                 mailParticipantRepository.save(p);
 
                 if (!p.getUsers().getId().equals(sender.getId())) {
-                    notificationServiceImp.notify(
+                    notificationService.notify(
                             p.getUsers().getEmail(),
                             "📨 Nhóm \"" + thread.getTitle() + "\" vừa có tin nhắn mới"
                     );
@@ -126,7 +128,7 @@ public class MailServiceImp implements MailService {
             }
         } else {
             // Trường hợp cá nhân
-            notificationServiceImp.notify(
+            notificationService.notify(
                     mail.getReceiver().getEmail(),
                     "📨 Bạn vừa nhận một tin nhắn trong cuộc trò chuyện \"" + thread.getTitle() + "\""
             );
@@ -282,7 +284,7 @@ public class MailServiceImp implements MailService {
 
         for (Users user : receivers) {
             if( !user.getId().equals(creator.getId())){
-                notificationServiceImp.notify(user.getEmail(),"Bạn vừa được thêm vào nhóm " + title);
+                notificationService.notify(user.getEmail(),"Bạn vừa được thêm vào nhóm " + title);
             }
         }
 

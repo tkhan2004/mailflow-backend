@@ -3,6 +3,7 @@ package org.example.mailflowbackend.Service.Imp;
 import org.example.mailflowbackend.Dto.ProfileResponeDto;
 import org.example.mailflowbackend.Entity.Users;
 import org.example.mailflowbackend.Repository.UserRepository;
+import org.example.mailflowbackend.Service.CloudinaryService;
 import org.example.mailflowbackend.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,7 +21,7 @@ public class UserServiceImp implements UserService {
     private UserRepository userRepository;
 
     @Autowired
-    private CloudinaryServiceImp cloudinaryServiceImp;
+    private CloudinaryService cloudinaryService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -33,7 +34,7 @@ public class UserServiceImp implements UserService {
         user.setPhone(phone);
         if (avatar != null &&   !avatar.isEmpty() ) {
             try {
-                String avatarUrl = cloudinaryServiceImp.uploadFile(avatar);
+                String avatarUrl = cloudinaryService.uploadFile(avatar);
                 user.setAvatar(avatarUrl);
             } catch (IOException e) {
                 throw new RuntimeException(e);
